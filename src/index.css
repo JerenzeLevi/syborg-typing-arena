@@ -1,0 +1,428 @@
+@import "tailwindcss";
+
+@theme {
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  --font-sans: "Space Grotesk", "Inter", ui-sans-serif, system-ui;
+
+  --color-syb-black: #0a0d14;
+  --color-syb-navy: #0e1730;
+  --color-syb-blue: #1e40ff;
+  --color-syb-blue-bright: #3b82f6;
+  --color-syb-cyan: #00f0ff;
+  --color-syb-yellow: #ffe600;
+  --color-syb-white: #f5f7ff;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    /* reserve the scrollbar gutter always, so short pages (like an empty
+       Leaderboard) don't get a wider viewport than tall pages and shift the
+       navbar/logo sideways when a scrollbar appears/disappears */
+    scrollbar-gutter: stable;
+    overflow-y: scroll;
+  }
+  body {
+    margin: 0;
+    background-color: var(--color-syb-black);
+    background-image: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(30, 64, 255, 0.16), transparent);
+    color: var(--color-syb-white);
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+  }
+}
+
+@layer components {
+  /* faint sophisticated digital grid, HUD-style */
+  .circuit-bg {
+    background-image:
+      linear-gradient(rgba(0, 240, 255, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 240, 255, 0.08) 1px, transparent 1px);
+    background-size: 42px 42px;
+    background-position: center;
+  }
+
+  /* glassmorphism card base used across all pages */
+  .glow-border {
+    position: relative;
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    background: rgba(14, 23, 48, 0.35);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 0 24px rgba(0, 240, 255, 0.12), inset 0 0 30px rgba(30, 64, 255, 0.06);
+  }
+
+  /* the Abyss card/arena: a distinct red, corrupted-feeling variant of glow-border */
+  .abyss-card {
+    border: 1px solid rgba(255, 0, 60, 0.35);
+    background: linear-gradient(160deg, rgba(40, 4, 10, 0.55), rgba(10, 13, 20, 0.5));
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 0 26px rgba(255, 0, 60, 0.18), inset 0 0 30px rgba(255, 0, 60, 0.08);
+  }
+
+  /* thin HUD crosshair ticks on the corners of a card */
+  .hud-corners::before,
+  .hud-corners::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-color: var(--color-syb-cyan);
+    opacity: 0.7;
+    pointer-events: none;
+  }
+  .hud-corners::before {
+    top: -1px;
+    left: -1px;
+    border-top: 2px solid var(--color-syb-cyan);
+    border-left: 2px solid var(--color-syb-cyan);
+  }
+  .hud-corners::after {
+    bottom: -1px;
+    right: -1px;
+    border-bottom: 2px solid var(--color-syb-yellow);
+    border-right: 2px solid var(--color-syb-yellow);
+  }
+
+  .yellow-glow {
+    text-shadow: 0 0 12px rgba(255, 230, 0, 0.6);
+  }
+
+  .btn-syb {
+    @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-md border px-6 py-3 font-mono text-sm font-semibold uppercase tracking-widest transition-all duration-200 cursor-pointer;
+    border-color: var(--color-syb-blue-bright);
+    color: var(--color-syb-white);
+    background: linear-gradient(180deg, rgba(30, 64, 255, 0.25), rgba(10, 13, 20, 0.4));
+    backdrop-filter: blur(6px);
+  }
+  .btn-syb::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 30%, rgba(0, 240, 255, 0.35) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 0.6s ease;
+  }
+  .btn-syb:hover::after {
+    transform: translateX(120%);
+  }
+
+  .input-syb {
+    @apply rounded-md border border-syb-blue/40 bg-syb-black/60 px-3 py-2 font-mono text-sm text-syb-white outline-none transition-colors;
+  }
+  .input-syb:focus {
+    border-color: var(--color-syb-cyan);
+  }
+  .btn-syb:hover {
+    border-color: var(--color-syb-yellow);
+    color: var(--color-syb-yellow);
+    box-shadow: 0 0 18px rgba(255, 230, 0, 0.4);
+    transform: translateY(-1px);
+  }
+  .btn-syb:active {
+    transform: translateY(0) scale(0.96);
+  }
+
+  /* navbar links: sweeping neon underline + active-tab pulse */
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 2px;
+    height: 2px;
+    background: var(--color-syb-cyan);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+  }
+  .nav-link:hover::after {
+    transform: scaleX(1);
+  }
+  .nav-link-active {
+    background: rgba(30, 64, 255, 0.18);
+    box-shadow: 0 0 14px rgba(255, 230, 0, 0.25), inset 0 0 8px rgba(0, 240, 255, 0.15);
+    animation: navPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes navPulse {
+    0%, 100% { box-shadow: 0 0 14px rgba(255, 230, 0, 0.2); }
+    50% { box-shadow: 0 0 20px rgba(255, 230, 0, 0.4); }
+  }
+
+  .char-pending { color: rgba(245, 247, 255, 0.35); }
+  .char-correct { color: var(--color-syb-cyan); }
+  .char-incorrect { color: #ff4d6d; background: rgba(255, 77, 109, 0.15); border-radius: 2px; }
+  .char-current {
+    color: var(--color-syb-white);
+    border-bottom: 2px solid var(--color-syb-yellow);
+    animation: caretPulse 1s ease-in-out infinite;
+  }
+}
+
+@keyframes caretPulse {
+  0%, 100% { border-color: var(--color-syb-yellow); }
+  50% { border-color: transparent; }
+}
+
+@keyframes glitchShift {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 1px); }
+  40% { transform: translate(2px, -1px); }
+  60% { transform: translate(-1px, -1px); }
+  80% { transform: translate(1px, 1px); }
+  100% { transform: translate(0); }
+}
+.glitching {
+  animation: glitchShift 0.18s steps(2, end) infinite;
+}
+
+/* ---------- Mode effects: these reshape the whole UI, not just the prompt text ---------- */
+
+/* GLITCH MODE — page-wide scanlines, chromatic split flicker, periodic screen shake */
+@keyframes scanlineDrift {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 240px; }
+}
+.glitch-scanlines {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  opacity: 0.6;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 240, 255, 0.22) 0px,
+    transparent 1px,
+    transparent 3px
+  );
+  animation: scanlineDrift 3s linear infinite;
+}
+
+/* horizontal tearing bands — displaced strips that jump sideways */
+@keyframes tearJump {
+  0%, 92%, 100% { transform: translateX(0); opacity: 0; }
+  93% { transform: translateX(-14px); opacity: 0.5; }
+  95% { transform: translateX(10px); opacity: 0.5; }
+  97% { transform: translateX(-6px); opacity: 0.4; }
+}
+.glitch-tear-bands {
+  position: fixed;
+  inset: 0;
+  z-index: 46;
+  pointer-events: none;
+}
+.glitch-tear-bands::before,
+.glitch-tear-bands::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6%;
+  background: rgba(0, 240, 255, 0.25);
+  mix-blend-mode: color-dodge;
+  animation: tearJump 2.2s steps(1, end) infinite;
+}
+.glitch-tear-bands::before { top: 28%; animation-delay: 0.3s; }
+.glitch-tear-bands::after { top: 61%; background: rgba(255, 0, 60, 0.25); animation-delay: 0.9s; }
+
+/* red corruption rift — sweeps across the screen with a CORRUPTED label */
+@keyframes riftSweep {
+  0% { transform: translateY(-100%); opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+.glitch-rift {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+  overflow: hidden;
+}
+.glitch-rift::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 0, 60, 0.9);
+  box-shadow: 0 0 30px 8px rgba(255, 0, 60, 0.55);
+  animation: riftSweep 0.26s linear;
+}
+.glitch-rift-label {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.3em;
+  color: #ff003c;
+  text-shadow: 0 0 12px rgba(255, 0, 60, 0.8);
+  animation: chromaFlicker 0.08s steps(2, end) 3;
+}
+
+@keyframes chromaFlicker {
+  0%, 100% { text-shadow: 0 0 0 transparent; }
+  50% { text-shadow: -1.5px 0 rgba(0, 240, 255, 0.7), 1.5px 0 rgba(255, 230, 0, 0.6); }
+}
+.glitch-chroma {
+  animation: chromaFlicker 0.12s steps(2, end) infinite;
+}
+
+@keyframes screenShake {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-3px, 2px); }
+  50% { transform: translate(3px, -2px); }
+  75% { transform: translate(-2px, -1px); }
+}
+.glitch-shake {
+  animation: screenShake 0.25s steps(3, end);
+}
+
+/* BLIND MODE — dashboard dims/blurs into a focus vignette, only the input stays sharp */
+.blind-dim {
+  filter: blur(3px) brightness(0.55) saturate(0.6);
+  opacity: 0.55;
+  transition: filter 0.6s ease, opacity 0.6s ease;
+  pointer-events: none;
+}
+.blind-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  background: radial-gradient(ellipse 60% 50% at 50% 55%, transparent 0%, rgba(10, 13, 20, 0.7) 75%);
+}
+
+/* one-shot activation feedback when a mode toggle is switched ON */
+@keyframes blackoutFlash {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.mode-fx-blackout {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: #000;
+  pointer-events: none;
+  animation: blackoutFlash 0.55s ease-in-out;
+}
+.mode-fx-scanlines {
+  z-index: 66;
+  animation: none;
+  opacity: 0.8;
+}
+
+/* whole-page reach: navbar dims along with the dashboard while blind-typing */
+body.syb-blind-active .navbar-el {
+  filter: blur(2px) brightness(0.5);
+  opacity: 0.5;
+}
+body.syb-glitch-active .navbar-el {
+  animation: chromaFlicker 0.4s steps(2, end) infinite;
+}
+
+/* hero: floating logo, flickering neon word, periodic scanline sweep */
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(2deg); }
+}
+@keyframes flicker {
+  0%, 19%, 21%, 23%, 80%, 100% { opacity: 1; text-shadow: 0 0 14px rgba(255, 230, 0, 0.7); }
+  20%, 22%, 79% { opacity: 0.4; text-shadow: none; }
+}
+@keyframes heroSweep {
+  0% { transform: translateX(-120%); }
+  35%, 100% { transform: translateX(220%); }
+}
+.hero-scanline::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.15), transparent);
+  animation: heroSweep 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ---------- "Corrupted System Core" — global living-machine layer ---------- */
+
+/* film-grain noise, always faintly present */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* cursor glow trail */
+.cursor-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 26px;
+  height: 26px;
+  margin-left: -13px;
+  margin-top: -13px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 240, 255, 0.35), transparent 70%);
+  pointer-events: none;
+  z-index: 100;
+  mix-blend-mode: screen;
+  display: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .cursor-glow { display: block; }
+}
+
+/* ambient instability: a random card flickers briefly, unprompted */
+.ambient-flicker {
+  animation: chromaFlicker 0.09s steps(2, end) 2;
+}
+
+/* subtle idle drift for decorative/floating panels — "barely holding together" */
+@keyframes drift {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(-0.4deg); }
+}
+.drift {
+  animation: drift 6s ease-in-out infinite;
+}
+.drift-alt {
+  animation: drift 7s ease-in-out infinite reverse;
+}
+
+/* BLIND MODE: random hard blackout bursts, on top of the vignette */
+@keyframes blackout {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+.blind-blackout {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  background: #000;
+  pointer-events: none;
+  animation: blackout 0.2s ease-in-out;
+}
+
+/* OVERDRIVE MODE — triggered by sustained high WPM + accuracy */
+@keyframes overdrivePulse {
+  0%, 100% { box-shadow: 0 0 30px rgba(255, 230, 0, 0.35); }
+  50% { box-shadow: 0 0 55px rgba(0, 240, 255, 0.55); }
+}
+.overdrive-active {
+  animation: overdrivePulse 0.6s ease-in-out infinite;
+  border-color: var(--color-syb-yellow) !important;
+}
+body.syb-overdrive .navbar-el {
+  animation: chromaFlicker 0.5s steps(2, end) infinite;
+}
