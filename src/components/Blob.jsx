@@ -6,6 +6,8 @@ const VARIANTS = {
   yellow: "rgba(255, 230, 0, 0.28)",
   purple: "rgba(122, 0, 255, 0.3)",
   red: "rgba(255, 0, 60, 0.32)",
+  orange: "rgba(255, 122, 0, 0.32)",
+  green: "rgba(34, 220, 130, 0.32)",
 };
 
 // A continuously morphing, breathing SVG blob used as ambient decoration —

@@ -7,6 +7,7 @@ import { useGsapReveal } from "../hooks/useGsapReveal";
 export default function PlayPage() {
   const [difficultyId, setDifficultyId] = useState(null);
   const [promptMode, setPromptMode] = useState("words"); // "words" | "sentences"
+  const [timeLimit, setTimeLimit] = useState(60); // seconds; ignored by Abyss (endless)
   const [modes, setModes] = useState({ blind: false, glitch: false });
   const [lastEngine, setLastEngine] = useState(null);
   const ref = useGsapReveal([difficultyId]);
@@ -27,13 +28,16 @@ export default function PlayPage() {
           onToggleMode={toggleMode}
           promptMode={promptMode}
           onPromptModeChange={setPromptMode}
+          timeLimit={timeLimit}
+          onTimeLimitChange={setTimeLimit}
         />
       ) : (
         <>
           <TypingArena
-            key={`${difficultyId}-${promptMode}`}
+            key={`${difficultyId}-${promptMode}-${timeLimit}`}
             difficultyId={difficultyId}
             promptMode={promptMode}
+            timeLimit={timeLimit}
             modes={modes}
             onFinish={setLastEngine}
           />

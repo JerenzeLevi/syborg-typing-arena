@@ -13,9 +13,11 @@ function scramble(str) {
     .join("");
 }
 
-export default function TypingArena({ difficultyId, promptMode = "words", modes, onFinish }) {
-  const engine = useTypingEngine(difficultyId, { blind: modes.blind, promptMode });
+export default function TypingArena({ difficultyId, promptMode = "words", timeLimit, modes, onFinish }) {
+  const engine = useTypingEngine(difficultyId, { blind: modes.blind, promptMode, timeLimit });
   const isAbyss = difficultyId === "abyss";
+  const isHard = difficultyId === "hard";
+  const isEasy = difficultyId === "easy";
   const inputRef = useRef(null);
   const promptRef = useRef(null);
   const [hidePrompt, setHidePrompt] = useState(false);
@@ -265,6 +267,10 @@ export default function TypingArena({ difficultyId, promptMode = "words", modes,
           className={`relative z-30 mt-4 w-full rounded-lg border bg-syb-black/80 px-4 py-3 font-mono text-lg text-syb-white outline-none ${
             isAbyss
               ? "border-red-500/60 shadow-[0_0_20px_rgba(255,0,60,0.2)] focus:border-red-400"
+              : isHard
+              ? "border-orange-500/60 shadow-[0_0_20px_rgba(255,122,0,0.2)] focus:border-orange-400"
+              : isEasy
+              ? "border-green-500/60 shadow-[0_0_20px_rgba(34,220,130,0.2)] focus:border-green-400"
               : "border-syb-cyan/60 shadow-[0_0_20px_rgba(0,240,255,0.15)] focus:border-syb-yellow"
           }`}
           placeholder="Start typing here…"

@@ -5,14 +5,16 @@ const CRASH_ACCURACY_SAMPLE = 20; // keystrokes considered for abyss crash check
 
 export function useTypingEngine(
   difficultyId,
-  { blind = false, promptMode = "words", seed = null } = {}
+  { blind = false, promptMode = "words", seed = null, timeLimit = undefined } = {}
 ) {
   const diff = DIFFICULTIES[difficultyId];
+  // abyss stays infinite regardless of any override; everyone else can pick a custom duration
+  const effectiveTimeLimit = diff.timeLimit == null ? null : timeLimit ?? diff.timeLimit;
   const [queue, setQueue] = useState(() => getPromptQueue(difficultyId, promptMode, 40, seed));
   const [promptIndex, setPromptIndex] = useState(0);
   const [typed, setTyped] = useState("");
   const [status, setStatus] = useState("idle"); // idle | running | finished | crashed
-  const [timeLeft, setTimeLeft] = useState(diff.timeLimit);
+  const [timeLeft, setTimeLeft] = useState(effectiveTimeLimit);
   const [combo, setCombo] = useState(0);
   const [wave, setWave] = useState(1);
   const [wpmSamples, setWpmSamples] = useState([]); // { t, wpm }
@@ -33,7 +35,7 @@ export function useTypingEngine(
     setPromptIndex(0);
     setTyped("");
     setStatus("running");
-    setTimeLeft(diff.timeLimit);
+    setTimeLeft(effectiveTimeLimit);
     setCombo(0);
     setWave(1);
     setWpmSamples([]);
@@ -43,7 +45,7 @@ export function useTypingEngine(
     totalCharsRef.current = 0;
     recentResultsRef.current = [];
     startTimeRef.current = Date.now();
-  }, [difficultyId, diff.timeLimit, promptMode, seed]);
+  }, [difficultyId, effectiveTimeLimit, promptMode, seed]);
 
   const finish = useCallback((finalStatus = "finished") => {
     setStatus(finalStatus);
@@ -51,7 +53,7 @@ export function useTypingEngine(
 
   // countdown timer (non-abyss modes)
   useEffect(() => {
-    if (status !== "running" || diff.timeLimit == null) return;
+    if (status !== "running" || effectiveTimeLimit == null) return;
     timerRef.current = setInterval(() => {
       setTimeLeft((t) => {
         if (t <= 1) {
@@ -63,7 +65,7 @@ export function useTypingEngine(
       });
     }, 1000);
     return () => clearInterval(timerRef.current);
-  }, [status, diff.timeLimit, finish]);
+  }, [status, effectiveTimeLimit, finish]);
 
   // WPM sampling every 2s for the stats graph
   useEffect(() => {

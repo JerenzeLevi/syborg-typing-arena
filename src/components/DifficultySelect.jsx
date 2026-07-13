@@ -11,7 +11,13 @@ const RADII = [
   "40% 60% 45% 55% / 60% 40% 55% 45%",
 ];
 
-const BLOB_COLORS = ["cyan", "yellow", "cyan", "red"];
+const TIME_OPTIONS = [
+  { label: "30s", value: 30 },
+  { label: "60s", value: 60 },
+  { label: "3m", value: 180 },
+  { label: "5m", value: 300 },
+  { label: "10m", value: 600 },
+];
 
 export default function DifficultySelect({
   selected,
@@ -20,6 +26,8 @@ export default function DifficultySelect({
   onToggleMode,
   promptMode,
   onPromptModeChange,
+  timeLimit,
+  onTimeLimitChange,
 }) {
   const [activationFx, setActivationFx] = useState(null); // null | "blind" | "glitch"
 
@@ -59,6 +67,26 @@ export default function DifficultySelect({
           active={promptMode === "sentences"}
           onClick={() => onPromptModeChange("sentences")}
         />
+        <span className="font-mono text-[10px] uppercase tracking-widest text-syb-white/30">
+          (Hard ignores this — always syntax)
+        </span>
+      </div>
+
+      <div className="mb-10 flex flex-wrap items-center justify-center gap-3">
+        <span className="font-mono text-[10px] uppercase tracking-widest text-syb-white/40">
+          Time limit:
+        </span>
+        {TIME_OPTIONS.map((opt) => (
+          <PromptModeToggle
+            key={opt.value}
+            label={opt.label}
+            active={timeLimit === opt.value}
+            onClick={() => onTimeLimitChange(opt.value)}
+          />
+        ))}
+        <span className="font-mono text-[10px] uppercase tracking-widest text-syb-white/30">
+          (Abyss ignores this — it's endless)
+        </span>
       </div>
 
       {/* fluid flex layout instead of a rigid grid — cards find their own weight */}
@@ -98,6 +126,8 @@ export default function DifficultySelect({
 
 function DifficultyCard({ d, index, isSelected, onSelect }) {
   const isAbyss = d.id === "abyss";
+  const isHard = d.id === "hard";
+  const isEasy = d.id === "easy";
   const ref = useGSAPAnimation((el) => {
     gsap.to(el, {
       scale: 1.02,
@@ -117,29 +147,47 @@ function DifficultyCard({ d, index, isSelected, onSelect }) {
       className={`glow-border relative w-56 overflow-visible p-6 text-left transition-colors ${
         isAbyss
           ? "abyss-card hover:border-red-400"
+          : isHard
+          ? "hover:border-orange-400"
+          : isEasy
+          ? "hover:border-green-400"
           : "hover:border-syb-yellow"
       } ${
         isSelected
           ? isAbyss
             ? "border-red-400 bg-red-950/20"
+            : isHard
+            ? "border-orange-400 bg-orange-950/20"
+            : isEasy
+            ? "border-green-400 bg-green-950/20"
             : "border-syb-yellow bg-syb-blue/15"
           : ""
       }`}
       style={{ borderRadius: RADII[index % RADII.length] }}
     >
       <Blob
-        color={isAbyss ? "red" : BLOB_COLORS[index % BLOB_COLORS.length]}
+        color={isAbyss ? "red" : isHard ? "orange" : isEasy ? "green" : "cyan"}
         size={140}
         className="absolute -right-8 -top-8 -z-10"
       />
       <p
         className={`font-mono text-lg font-bold uppercase tracking-widest ${
-          isAbyss ? "text-red-400" : "text-syb-white"
+          isAbyss ? "text-red-400" : isHard ? "text-orange-400" : isEasy ? "text-green-400" : "text-syb-white"
         }`}
       >
         {d.label}
       </p>
-      <p className={`mt-2 text-sm ${isAbyss ? "text-red-200/50" : "text-syb-white/60"}`}>
+      <p
+        className={`mt-2 text-sm ${
+          isAbyss
+            ? "text-red-200/50"
+            : isHard
+            ? "text-orange-200/50"
+            : isEasy
+            ? "text-green-200/50"
+            : "text-syb-white/60"
+        }`}
+      >
         {d.description}
       </p>
     </button>
