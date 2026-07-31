@@ -1,8 +1,21 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase, createRoom, joinRoom, startRoom, subscribeToRoom, fetchPlayers } from "../lib/realtime";
+import {
+  supabase,
+  createRoom,
+  joinRoom,
+  startRoom,
+  subscribeToRoom,
+  fetchPlayers,
+  updatePlayerCat,
+  kickPlayer,
+} from "../lib/realtime";
 import { DIFFICULTIES } from "../data/wordPools";
+import { CATS } from "../data/cats";
+import CatRaceTrack from "../components/CatRaceTrack";
 import { useGsapReveal } from "../hooks/useGsapReveal";
+
+const CAT_RACE_MAX_PLAYERS = 4;
 
 export default function CompetePage() {
   const ref = useGsapReveal();
@@ -13,6 +26,7 @@ export default function CompetePage() {
   const [joinCode, setJoinCode] = useState("");
   const [difficultyId, setDifficultyId] = useState("normal");
   const [promptMode, setPromptMode] = useState("words");
+  const [raceModeChoice, setRaceModeChoice] = useState("cat_race");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -42,7 +56,14 @@ export default function CompetePage() {
         difficulty: difficultyId,
         promptMode,
       });
-      setRoom({ code, seed, difficulty: difficultyId, prompt_mode: promptMode, status: "lobby", host_name: name.trim() });
+      setRoom({
+        code,
+        seed,
+        difficulty: difficultyId,
+        prompt_mode: promptMode,
+        status: "lobby",
+        host_name: name.trim(),
+      });
       setMe(player);
       setPlayers([player]);
       setView("lobby");
@@ -79,7 +100,13 @@ export default function CompetePage() {
       onRoom: (payload) => {
         if (payload.new?.status === "running") {
           navigate(`/compete/${room.code}`, {
-            state: { seed: room.seed, difficulty: room.difficulty, promptMode: room.prompt_mode, me },
+            state: {
+              seed: payload.new.seed,
+              difficulty: room.difficulty,
+              promptMode: room.prompt_mode,
+              raceMode: payload.new.race_mode,
+              me,
+            },
           });
         }
       },
@@ -89,12 +116,33 @@ export default function CompetePage() {
   }, [view, room]);
 
   const isHost = me && room && me.name === room.host_name;
+  const racers = players.filter((p) => !p.is_host);
+  const canChooseCatRace = racers.length > 0 && racers.length <= CAT_RACE_MAX_PLAYERS;
+  const isCatRace = canChooseCatRace && raceModeChoice === "cat_race";
 
   const handleStart = async () => {
-    await startRoom(room.code);
+    const raceMode = canChooseCatRace ? raceModeChoice : "standard";
+    const { seed } = await startRoom(room.code, { raceMode });
     navigate(`/compete/${room.code}`, {
-      state: { seed: room.seed, difficulty: room.difficulty, promptMode: room.prompt_mode, me },
+      state: {
+        seed,
+        difficulty: room.difficulty,
+        promptMode: room.prompt_mode,
+        raceMode,
+        me,
+      },
     });
+  };
+
+  const handleKick = async (playerId) => {
+    await kickPlayer(playerId);
+    setPlayers(await fetchPlayers(room.code));
+  };
+
+  const handlePickCat = async (catId) => {
+    if (!me) return;
+    await updatePlayerCat(me.id, catId);
+    setMe((m) => ({ ...m, cat_id: catId }));
   };
 
   return (
@@ -135,6 +183,12 @@ export default function CompetePage() {
               <option value="sentences">Sentences</option>
             </select>
           </Field>
+          <p className="text-xs text-syb-white/50">
+            With 2-4 players you'll choose Cat Race or Standard mode in the lobby. 5+ players always
+            runs Standard Tournament mode. As host you spectate — you won't be racing. Rounds have no
+            fixed timer: end a round anytime (e.g. if someone's way behind), kick a player, and start
+            the next round from the lobby.
+          </p>
           {error && <p className="text-sm text-red-400">{error}</p>}
           <button type="submit" disabled={busy} className="btn-syb">
             {busy ? "Creating…" : "Create Room"}
@@ -176,16 +230,110 @@ export default function CompetePage() {
             {players.map((p) => (
               <div key={p.id} className="flex items-center justify-between rounded-md border border-syb-blue/20 px-3 py-2">
                 <span className="font-mono text-sm text-syb-white">
-                  {p.name} {p.name === room.host_name && <span className="text-syb-yellow">(host)</span>}
+                  {p.name} {p.is_host && <span className="text-syb-yellow">(host — spectating)</span>}
                 </span>
-                <span className="text-xs text-syb-cyan">ready</span>
+                <div className="flex items-center gap-2">
+                  {!p.is_host && (
+                    <span className="text-xs text-syb-cyan">
+                      {p.cat_id ? CATS.find((c) => c.id === p.cat_id)?.label : "picking cat…"}
+                    </span>
+                  )}
+                  {isHost && !p.is_host && (
+                    <button
+                      type="button"
+                      onClick={() => handleKick(p.id)}
+                      title={`Remove ${p.name}`}
+                      className="font-mono text-xs text-red-400 hover:text-red-300"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
 
+          {isHost && (
+            <div className="mb-6 text-left">
+              <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-syb-white/50">
+                Race mode
+              </p>
+              {canChooseCatRace ? (
+                <div className="flex gap-2">
+                  {[
+                    { value: "cat_race", label: "Cat Race" },
+                    { value: "standard", label: "Standard" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setRaceModeChoice(opt.value)}
+                      className={`flex-1 rounded-md border px-3 py-2 font-mono text-xs uppercase tracking-widest transition-colors ${
+                        raceModeChoice === opt.value
+                          ? "border-syb-yellow bg-syb-yellow/10 text-syb-yellow"
+                          : "border-syb-blue/20 text-syb-white/60 hover:border-syb-cyan"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-md border border-syb-blue/20 px-3 py-4 text-center text-xs text-syb-white/60">
+                  5+ racers joined — Standard Tournament Mode will run instead of the cat race.
+                </p>
+              )}
+            </div>
+          )}
+
+          {!isHost && !me?.is_host && (
+            <div className="mb-6 text-left">
+              <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-syb-white/50">
+                Pick your racer
+              </p>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                {CATS.map((cat) => {
+                  const claimedBy = racers.find((p) => p.cat_id === cat.id);
+                  const claimedByMe = claimedBy?.id === me?.id;
+                  const disabled = claimedBy && !claimedByMe;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => handlePickCat(cat.id)}
+                      title={claimedBy ? `${claimedBy.name}${claimedByMe ? " (you)" : ""}` : cat.label}
+                      className={`flex flex-col items-center gap-1 rounded-md border px-1 py-2 transition-colors ${
+                        claimedByMe
+                          ? "border-syb-yellow bg-syb-yellow/10"
+                          : disabled
+                          ? "cursor-not-allowed border-syb-blue/10 opacity-30"
+                          : "border-syb-blue/20 hover:border-syb-cyan"
+                      }`}
+                    >
+                      <img src={cat.file} alt={cat.label} className="h-10 w-auto object-contain" draggable={false} />
+                      <span className="font-mono text-[9px] uppercase tracking-widest text-syb-white/70">{cat.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {isHost && isCatRace && (
+            <div className="mb-6 text-left">
+              <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-syb-white/50">
+                Track preview (spectate)
+              </p>
+              <CatRaceTrack
+                racers={racers.map((p) => ({ id: p.id, name: p.name, catId: p.cat_id, progress: 0 }))}
+              />
+            </div>
+          )}
+
           {isHost ? (
             <button onClick={handleStart} className="btn-syb">
-              Start Match ({players.length} joined)
+              Start Match ({racers.length} joined)
             </button>
           ) : (
             <p className="font-mono text-sm text-syb-cyan animate-pulse">Waiting for host to start…</p>
