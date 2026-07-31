@@ -160,6 +160,15 @@
   }
 }
 
+/* cat race: small bob/scamper while a racer is actively moving between start and finish */
+@keyframes catRun {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-4px) scaleY(0.97); }
+}
+.animate-cat-run {
+  animation: catRun 0.35s ease-in-out infinite;
+}
+
 @keyframes caretPulse {
   0%, 100% { border-color: var(--color-syb-yellow); }
   50% { border-color: transparent; }

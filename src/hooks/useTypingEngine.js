@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { getPromptQueue, DIFFICULTIES } from "../data/wordPools";
+import { pickParagraph } from "../data/paragraphs";
 
 const CRASH_ACCURACY_SAMPLE = 20; // keystrokes considered for abyss crash check
 
@@ -8,9 +9,14 @@ export function useTypingEngine(
   { blind = false, promptMode = "words", seed = null, timeLimit = undefined } = {}
 ) {
   const diff = DIFFICULTIES[difficultyId];
-  // abyss stays infinite regardless of any override; everyone else can pick a custom duration
-  const effectiveTimeLimit = diff.timeLimit == null ? null : timeLimit ?? diff.timeLimit;
-  const [queue, setQueue] = useState(() => getPromptQueue(difficultyId, promptMode, 40, seed));
+  const isParagraphMode = promptMode === "paragraph";
+  // abyss stays infinite regardless of any override; "none" forces no limit for any
+  // difficulty; everyone else can pick a custom duration via a numeric timeLimit
+  const effectiveTimeLimit =
+    timeLimit === "none" ? null : diff.timeLimit == null ? null : timeLimit ?? diff.timeLimit;
+  const [queue, setQueue] = useState(() =>
+    isParagraphMode ? [pickParagraph(seed)] : getPromptQueue(difficultyId, promptMode, 40, seed)
+  );
   const [promptIndex, setPromptIndex] = useState(0);
   const [typed, setTyped] = useState("");
   const [status, setStatus] = useState("idle"); // idle | running | finished | crashed
@@ -31,7 +37,7 @@ export function useTypingEngine(
   const currentPrompt = queue[promptIndex] || "";
 
   const start = useCallback(() => {
-    setQueue(getPromptQueue(difficultyId, promptMode, 40, seed));
+    setQueue(isParagraphMode ? [pickParagraph(seed)] : getPromptQueue(difficultyId, promptMode, 40, seed));
     setPromptIndex(0);
     setTyped("");
     setStatus("running");
@@ -45,7 +51,7 @@ export function useTypingEngine(
     totalCharsRef.current = 0;
     recentResultsRef.current = [];
     startTimeRef.current = Date.now();
-  }, [difficultyId, effectiveTimeLimit, promptMode, seed]);
+  }, [difficultyId, effectiveTimeLimit, promptMode, seed, isParagraphMode]);
 
   const finish = useCallback((finalStatus = "finished") => {
     setStatus(finalStatus);
@@ -125,6 +131,12 @@ export function useTypingEngine(
 
       setTyped(value);
 
+      // paragraph mode: the whole prompt is one long text, race ends at the finish line
+      if (isParagraphMode) {
+        if (value === currentPrompt) finish("finished");
+        return;
+      }
+
       // completed the current prompt
       if (value === currentPrompt) {
         setCombo((c) => c + 1);
@@ -142,7 +154,7 @@ export function useTypingEngine(
         }
       }
     },
-    [status, typed, currentPrompt, promptIndex, queue.length, diff, difficultyId, promptMode, seed, finish]
+    [status, typed, currentPrompt, promptIndex, queue.length, diff, difficultyId, promptMode, seed, finish, isParagraphMode]
   );
 
   const elapsedSeconds = startTimeRef.current
@@ -165,6 +177,7 @@ export function useTypingEngine(
     accuracy: currentAccuracy(),
     finalWpm,
     totalCharsTyped: correctCharsRef.current,
+    promptProgress: currentPrompt.length ? typed.length / currentPrompt.length : 0,
     blind,
     start,
     finish,
