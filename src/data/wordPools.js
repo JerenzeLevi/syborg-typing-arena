@@ -9,6 +9,10 @@ const EASY_WORDS = [
   "download", "install", "update", "delete", "rename", "resize", "reboot", "unlock", "search", "filter",
   "sort", "zoom", "drag", "drop", "copy", "cut", "undo", "redo", "align", "crop",
   "flash", "beam", "grid", "sync", "cloud", "drive", "queue", "stack", "array", "loopback",
+  "node", "string", "float", "char", "heap", "table", "schema", "class", "method", "scope", "thread", "process", "memory", "storage", "binary", "hex", "parse", "render",
+  "client", "domain", "host", "socket", "packet", "cookie", "token", "prompt", "script", "style", "theme", "layout", "index", "matrix", "field", "record", "column", "row",
+  "patch", "log", "ping", "port", "route", "gateway", "console", "terminal", "shell", "input", "output", "buffer", "stream", "firewall"
+  
 ];
 
 const EASY_SENTENCES = [

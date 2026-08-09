@@ -283,7 +283,10 @@ export default function TypingArena({ difficultyId, promptMode = "words", timeLi
           <ResultTile label="WPM" value={engine.finalWpm} />
           <ResultTile label="Accuracy" value={`${engine.accuracy}%`} />
           <ResultTile label="Combo" value={engine.combo} />
-          <ResultTile label={difficultyId === "abyss" ? "Wave" : "Words"} value={engine.wave} />
+          <ResultTile
+            label={difficultyId === "abyss" ? "Wave" : "Words"}
+            value={difficultyId === "abyss" ? engine.wave : engine.combo}
+          />
         </div>
       )}
 

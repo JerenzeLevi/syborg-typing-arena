@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useParams, Link } from "react-router-dom";
 import { useTypingEngine } from "../hooks/useTypingEngine";
+import { pickParagraph } from "../data/paragraphs";
 import {
   updateProgress,
   subscribeToRoom,
@@ -115,7 +116,9 @@ export default function LiveMatchPage() {
   const finished = engine.status === "finished" || engine.status === "crashed";
   const racers = players.filter((p) => !p.is_host);
   const ranked = [...racers].sort((a, b) => (b.progress || 0) - (a.progress || 0));
-  const paragraphLength = engine.currentPrompt.length || 1;
+  // derived straight from the shared seed (not the local engine) so the host's
+  // spectator view stays correct even though the host never calls engine.start()
+  const paragraphLength = isCatRace ? pickParagraph(seed).length || 1 : engine.currentPrompt.length || 1;
   const canChooseCatRace = racers.length > 0 && racers.length <= CAT_RACE_MAX_PLAYERS;
 
   const handleKick = async (playerId) => {
