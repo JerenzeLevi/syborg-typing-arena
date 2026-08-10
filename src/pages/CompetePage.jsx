@@ -181,6 +181,7 @@ export default function CompetePage() {
             <select value={promptMode} onChange={(e) => setPromptMode(e.target.value)} className="input-syb">
               <option value="words">Words</option>
               <option value="sentences">Sentences</option>
+              <option value="paragraph">Paragraph</option>
             </select>
           </Field>
           <p className="text-xs text-syb-white/50">

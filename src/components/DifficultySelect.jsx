@@ -67,8 +67,13 @@ export default function DifficultySelect({
           active={promptMode === "sentences"}
           onClick={() => onPromptModeChange("sentences")}
         />
+        <PromptModeToggle
+          label="Paragraph"
+          active={promptMode === "paragraph"}
+          onClick={() => onPromptModeChange("paragraph")}
+        />
         <span className="font-mono text-[10px] uppercase tracking-widest text-syb-white/30">
-          (Hard ignores this — always syntax)
+          (Hard ignores Words/Sentences — always syntax)
         </span>
       </div>
 

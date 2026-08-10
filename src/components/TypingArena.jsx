@@ -284,8 +284,8 @@ export default function TypingArena({ difficultyId, promptMode = "words", timeLi
           <ResultTile label="Accuracy" value={`${engine.accuracy}%`} />
           <ResultTile label="Combo" value={engine.combo} />
           <ResultTile
-            label={difficultyId === "abyss" ? "Wave" : "Words"}
-            value={difficultyId === "abyss" ? engine.wave : engine.combo}
+            label={difficultyId === "abyss" ? "Wave" : promptMode === "paragraph" ? "Chars" : "Words"}
+            value={difficultyId === "abyss" ? engine.wave : promptMode === "paragraph" ? engine.totalCharsTyped : engine.combo}
           />
         </div>
       )}
