@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useParams, Link } from "react-router-dom";
 import { useTypingEngine } from "../hooks/useTypingEngine";
+import { usePromptAutoScroll } from "../hooks/usePromptAutoScroll";
 import { pickParagraph } from "../data/paragraphs";
 import {
   updateProgress,
@@ -39,8 +40,12 @@ export default function LiveMatchPage() {
   const [blind, setBlind] = useState(false);
   const reportedFinishRef = useRef(false);
   const finishSoundPlayedRef = useRef(false);
+  const promptScrollRef = useRef(null);
+  const currentCharRef = useRef(null);
 
   const roundActive = roomStatus === "running";
+
+  usePromptAutoScroll(promptScrollRef, currentCharRef, engine.currentPrompt);
 
   // (re)start the typing engine for this player at the top of every round
   useEffect(() => {
@@ -116,6 +121,14 @@ export default function LiveMatchPage() {
   const finished = engine.status === "finished" || engine.status === "crashed";
   const racers = players.filter((p) => !p.is_host);
   const ranked = [...racers].sort((a, b) => (b.progress || 0) - (a.progress || 0));
+  // post-round results order: finished racers first (higher wpm = finished sooner,
+  // since round starts are synced and there's no finish timestamp to sort by),
+  // then unfinished racers by how far they got.
+  const resultsRanked = [...racers].sort((a, b) => {
+    if (!!a.finished !== !!b.finished) return a.finished ? -1 : 1;
+    if (a.finished) return (b.wpm || 0) - (a.wpm || 0);
+    return (b.progress || 0) - (a.progress || 0);
+  });
   // derived straight from the shared seed (not the local engine) so the host's
   // spectator view stays correct even though the host never calls engine.start()
   const paragraphLength = isCatRace ? pickParagraph(seed).length || 1 : engine.currentPrompt.length || 1;
@@ -187,7 +200,43 @@ export default function LiveMatchPage() {
           )}
         </div>
 
-        <div className={blind ? "pointer-events-none blur-md select-none" : ""}>{board}</div>
+        <div className={blind ? "pointer-events-none blur-md select-none" : ""}>
+          {board}
+
+          {!roundActive && racers.length > 0 && (
+            <div className="mt-6 space-y-2">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-syb-white/50">
+                Round Results
+              </p>
+              {resultsRanked.map((p, i) => (
+                <div
+                  key={p.id}
+                  className="glow-border flex items-center gap-3 rounded-lg px-4 py-2"
+                >
+                  <span
+                    className={`w-6 font-mono text-sm ${i === 0 ? "text-syb-yellow" : "text-syb-cyan"}`}
+                  >
+                    #{i + 1}
+                  </span>
+                  <span className="flex-1 truncate font-mono text-sm text-syb-white">{p.name}</span>
+                  <span className="w-16 text-right font-mono text-xs text-syb-white/60">
+                    {p.wpm || 0} wpm
+                  </span>
+                  <span className="w-16 text-right font-mono text-xs text-syb-white/60">
+                    {p.accuracy ?? 100}% acc
+                  </span>
+                  <span
+                    className={`w-16 text-right font-mono text-xs ${
+                      p.finished ? "text-syb-yellow" : "text-syb-white/40"
+                    }`}
+                  >
+                    {p.finished ? "Finished" : "DNF"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {!roundActive && (
           <div className="mt-8 glow-border rounded-xl p-6 text-left">
@@ -273,7 +322,7 @@ export default function LiveMatchPage() {
         <>
           <div className="glow-border relative min-h-[140px] rounded-xl p-6 font-mono text-xl leading-relaxed sm:text-2xl">
             {!finished ? (
-              <>
+              <div ref={promptScrollRef} className="max-h-[8.5rem] overflow-hidden sm:max-h-[11rem]">
                 {engine.currentPrompt.split("").map((ch, i) => {
                   if (i < engine.typed.length) {
                     return (
@@ -283,12 +332,16 @@ export default function LiveMatchPage() {
                     );
                   }
                   return (
-                    <span key={i} className={i === engine.typed.length ? "char-current" : "char-pending"}>
+                    <span
+                      key={i}
+                      ref={i === engine.typed.length ? currentCharRef : undefined}
+                      className={i === engine.typed.length ? "char-current" : "char-pending"}
+                    >
                       {ch}
                     </span>
                   );
                 })}
-              </>
+              </div>
             ) : (
               <p className="yellow-glow text-center text-2xl font-bold text-syb-yellow">
                 {engine.status === "crashed" ? "SYSTEM CRASH" : "FINISHED"} — {engine.finalWpm} WPM

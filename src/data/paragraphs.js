@@ -122,7 +122,14 @@ function seededRandom(seed) {
   };
 }
 
+// Many PARAGRAPHS entries are single short sentences rather than full paragraphs,
+// so stitching 3 together keeps races (and solo Paragraph mode) from ending almost
+// instantly on a lucky short pick.
 export function pickParagraph(seed) {
   const rand = seed != null ? seededRandom(seed) : Math.random;
-  return PARAGRAPHS[Math.floor(rand() * PARAGRAPHS.length)];
+  const parts = [];
+  for (let i = 0; i < 3; i++) {
+    parts.push(PARAGRAPHS[Math.floor(rand() * PARAGRAPHS.length)]);
+  }
+  return parts.join(" ");
 }

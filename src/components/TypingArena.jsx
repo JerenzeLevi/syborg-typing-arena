@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTypingEngine } from "../hooks/useTypingEngine";
+import { usePromptAutoScroll } from "../hooks/usePromptAutoScroll";
 import GlitchOverlay from "./GlitchOverlay";
 import { addLeaderboardEntry, addHistoryEntry } from "../lib/storage";
 import gsap from "gsap";
@@ -20,6 +21,8 @@ export default function TypingArena({ difficultyId, promptMode = "words", timeLi
   const isEasy = difficultyId === "easy";
   const inputRef = useRef(null);
   const promptRef = useRef(null);
+  const promptScrollRef = useRef(null);
+  const currentCharRef = useRef(null);
   const [hidePrompt, setHidePrompt] = useState(false);
   const [glitchFrame, setGlitchFrame] = useState(null);
   const [playerName, setPlayerName] = useState("");
@@ -30,6 +33,8 @@ export default function TypingArena({ difficultyId, promptMode = "words", timeLi
   const prevTypedRef = useRef("");
 
   const blindActive = modes.blind && hidePrompt && engine.status === "running";
+
+  usePromptAutoScroll(promptScrollRef, currentCharRef, engine.currentPrompt);
 
   useEffect(() => {
     engine.start();
@@ -220,7 +225,7 @@ export default function TypingArena({ difficultyId, promptMode = "words", timeLi
         }`}
       >
         {!finished && (
-          <>
+          <div ref={promptScrollRef} className="max-h-[8.5rem] overflow-hidden sm:max-h-[11rem]">
             {hidePrompt ? (
               <span className="char-current">Type from memory…</span>
             ) : (
@@ -233,11 +238,11 @@ export default function TypingArena({ difficultyId, promptMode = "words", timeLi
                     {ch}
                   </span>
                 ))}
-                <span className="char-current">{displayRemainder[0]}</span>
+                <span ref={currentCharRef} className="char-current">{displayRemainder[0]}</span>
                 <span className="char-pending">{displayRemainder.slice(1)}</span>
               </>
             )}
-          </>
+          </div>
         )}
 
         {engine.status === "crashed" && (
